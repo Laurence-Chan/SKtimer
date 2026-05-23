@@ -1,0 +1,20 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Distribution
+dist/
+*.xcarchive
+
+# macOS
+.DS_Store
+
+# SwiftPM and tooling cache
+.build/
+.swiftpm/

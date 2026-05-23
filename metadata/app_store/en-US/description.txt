@@ -1,0 +1,14 @@
+SKtimer is a lightweight macOS timer built for people who want a quiet, local, and reliable countdown tool.
+
+Create timers by entering hours and minutes, start recent durations with one click, and run multiple timers at the same time. SKtimer keeps the next finishing timer visible in the menu bar, restores running timers after relaunch, and uses local macOS notifications when a timer completes.
+
+Highlights:
+- Fully offline
+- No account, ads, analytics, tracking, or network access
+- Multiple simultaneous timers
+- Menu bar countdown
+- Recent timer shortcuts
+- Local notifications and system sound
+- English and Simplified Chinese
+
+SKtimer collects no data.

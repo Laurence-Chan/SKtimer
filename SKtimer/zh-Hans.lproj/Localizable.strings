@@ -1,0 +1,68 @@
+"app.name" = "SKtimer";
+"app.tagline" = "专注工作用的离线倒计时。";
+
+"command.showMainWindow" = "显示 SKtimer";
+
+"toolbar.notifications" = "通知";
+"toolbar.notifications.help" = "请求通知权限";
+
+"timer.input.title" = "开始倒计时";
+"timer.input.hours" = "小时";
+"timer.input.minutes" = "分钟";
+"timer.start" = "开始";
+"timer.next" = "下一个";
+"timer.done" = "完成";
+"timer.state.running" = "运行中";
+"timer.state.paused" = "已暂停";
+"timer.state.completed" = "已完成";
+"timer.error.invalidHours" = "请输入 0 到 999 之间的小时数。";
+"timer.error.invalidMinutes" = "请输入 0 到 59 之间的分钟数。";
+"timer.error.durationTooShort" = "倒计时至少需要 1 分钟。";
+"timer.error.durationTooLong" = "倒计时不能超过 999 小时 59 分钟。";
+"timer.recent.title" = "最近使用";
+"timer.recent.accessibility" = "开始 %@ 倒计时";
+"timer.list.title" = "倒计时";
+"timer.clearCompleted" = "清除完成";
+"timer.empty.title" = "暂无倒计时";
+"timer.empty.description" = "输入小时和分钟，然后开始第一个倒计时。";
+"timer.pause" = "暂停";
+"timer.resume" = "继续";
+"timer.restart" = "重启";
+"timer.delete" = "删除";
+"timer.progress.accessibility" = "倒计时进度";
+
+"meaningful.stats.today" = "今天";
+"meaningful.stats.week" = "本周";
+"meaningful.stats.month" = "本月";
+"meaningful.prompt.windowTitle" = "倒计时完成";
+"meaningful.prompt.title" = "记录这一刻";
+"meaningful.prompt.question" = "这段时间对你来说有意义吗？";
+"meaningful.prompt.duration" = "已完成 %@";
+"meaningful.yes" = "Yes";
+"meaningful.no" = "No";
+
+"menuBar.accessibility.label" = "SKtimer 菜单栏倒计时";
+"menuBar.noRunningTimer" = "没有运行中的倒计时";
+"menuBar.open" = "打开 SKtimer";
+"menuBar.settings" = "设置";
+"menuBar.quit" = "退出 SKtimer";
+
+"settings.title" = "设置";
+"settings.subtitle" = "让 SKtimer 出现在有帮助的位置，并在不需要时保持安静。";
+"settings.showMenuBar" = "显示菜单栏项目";
+"settings.showMenuBarCountdown" = "在菜单栏显示倒计时";
+"settings.notifications.title" = "通知";
+"settings.notifications.request" = "请求权限";
+"settings.notifications.openSystem" = "打开系统设置";
+"settings.notifications.description" = "SKtimer 只使用本地 macOS 通知。没有任何数据会离开你的 Mac。";
+"settings.notifications.notDetermined" = "尚未请求";
+"settings.notifications.denied" = "已拒绝";
+"settings.notifications.authorized" = "已允许";
+"settings.notifications.provisional" = "临时允许";
+"settings.notifications.ephemeral" = "临时";
+"settings.notifications.unknown" = "未知";
+"settings.language.title" = "语言";
+"settings.language.description" = "SKtimer 跟随 macOS 的语言顺序，并在缺省时回退到英文。";
+
+"notification.timerComplete.title" = "倒计时完成";
+"notification.timerComplete.body" = "%@ 倒计时已结束。";

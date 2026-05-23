@@ -1,0 +1,68 @@
+"app.name" = "SKtimer";
+"app.tagline" = "Offline timers for focused work.";
+
+"command.showMainWindow" = "Show SKtimer";
+
+"toolbar.notifications" = "Notifications";
+"toolbar.notifications.help" = "Request notification permission";
+
+"timer.input.title" = "Start a timer";
+"timer.input.hours" = "Hours";
+"timer.input.minutes" = "Minutes";
+"timer.start" = "Start";
+"timer.next" = "Next";
+"timer.done" = "Done";
+"timer.state.running" = "Running";
+"timer.state.paused" = "Paused";
+"timer.state.completed" = "Completed";
+"timer.error.invalidHours" = "Enter hours from 0 to 999.";
+"timer.error.invalidMinutes" = "Enter minutes from 0 to 59.";
+"timer.error.durationTooShort" = "Timer duration must be at least 1 minute.";
+"timer.error.durationTooLong" = "Timer duration cannot be longer than 999h 59m.";
+"timer.recent.title" = "Recent";
+"timer.recent.accessibility" = "Start a %@ timer";
+"timer.list.title" = "Timers";
+"timer.clearCompleted" = "Clear Done";
+"timer.empty.title" = "No timers";
+"timer.empty.description" = "Enter hours and minutes, then start your first timer.";
+"timer.pause" = "Pause";
+"timer.resume" = "Resume";
+"timer.restart" = "Restart";
+"timer.delete" = "Delete";
+"timer.progress.accessibility" = "Timer progress";
+
+"meaningful.stats.today" = "Today";
+"meaningful.stats.week" = "This Week";
+"meaningful.stats.month" = "This Month";
+"meaningful.prompt.windowTitle" = "Timer Complete";
+"meaningful.prompt.title" = "A moment to mark";
+"meaningful.prompt.question" = "Did this time feel meaningful?";
+"meaningful.prompt.duration" = "%@ completed";
+"meaningful.yes" = "Yes";
+"meaningful.no" = "No";
+
+"menuBar.accessibility.label" = "SKtimer menu bar timer";
+"menuBar.noRunningTimer" = "No running timers";
+"menuBar.open" = "Open SKtimer";
+"menuBar.settings" = "Settings";
+"menuBar.quit" = "Quit SKtimer";
+
+"settings.title" = "Settings";
+"settings.subtitle" = "Keep SKtimer visible where it helps, and quiet where it should be.";
+"settings.showMenuBar" = "Show menu bar item";
+"settings.showMenuBarCountdown" = "Show countdown in menu bar";
+"settings.notifications.title" = "Notifications";
+"settings.notifications.request" = "Request Permission";
+"settings.notifications.openSystem" = "Open System Settings";
+"settings.notifications.description" = "SKtimer uses local macOS notifications only. No data leaves your Mac.";
+"settings.notifications.notDetermined" = "Not Requested";
+"settings.notifications.denied" = "Denied";
+"settings.notifications.authorized" = "Allowed";
+"settings.notifications.provisional" = "Provisional";
+"settings.notifications.ephemeral" = "Temporary";
+"settings.notifications.unknown" = "Unknown";
+"settings.language.title" = "Language";
+"settings.language.description" = "SKtimer follows your macOS language order and falls back to English.";
+
+"notification.timerComplete.title" = "Timer complete";
+"notification.timerComplete.body" = "%@ timer finished.";

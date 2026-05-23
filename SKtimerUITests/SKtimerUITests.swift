@@ -1,43 +1,111 @@
-//
-//  SKtimerUITests.swift
-//  SKtimerUITests
-//
-//  Created by Laurence Chan on 2026/5/23.
-//
-
 import XCTest
 
 final class SKtimerUITests: XCTestCase {
+    private var app: XCUIApplication!
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--reset-state"]
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        app = nil
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
+    func testCreatesPausesResumesRestartsAndDeletesTimer() throws {
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        let minutesField = app.textFields["minutesField"]
+        XCTAssertTrue(minutesField.waitForExistence(timeout: 5))
+        minutesField.click()
+        minutesField.typeKey("a", modifierFlags: [.command])
+        minutesField.typeText("1")
+
+        app.buttons["startTimerButton"].click()
+        XCTAssertTrue(app.scrollViews["timerList"].waitForExistence(timeout: 3))
+
+        let pauseButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "pauseResumeButton_")).firstMatch
+        XCTAssertTrue(pauseButton.waitForExistence(timeout: 3))
+        pauseButton.click()
+
+        let resumeButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "pauseResumeButton_")).firstMatch
+        XCTAssertTrue(resumeButton.waitForExistence(timeout: 3))
+        resumeButton.click()
+
+        let restartButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "restartButton_")).firstMatch
+        XCTAssertTrue(restartButton.waitForExistence(timeout: 3))
+        restartButton.click()
+
+        let deleteButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "deleteButton_")).firstMatch
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
+        deleteButton.click()
+
+        XCTAssertTrue(app.otherElements["emptyTimerState"].waitForExistence(timeout: 3))
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    func testInvalidInputShowsValidationError() throws {
+        app.launch()
+
+        let minutesField = app.textFields["minutesField"]
+        XCTAssertTrue(minutesField.waitForExistence(timeout: 5))
+        minutesField.click()
+        minutesField.typeKey("a", modifierFlags: [.command])
+        minutesField.typeText("0")
+
+        app.buttons["startTimerButton"].click()
+        XCTAssertTrue(app.staticTexts["inputErrorLabel"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testMeaningfulPromptYesUpdatesTodayStats() throws {
+        app.launchArguments.append("--uitesting-fast-timers")
+        app.launch()
+
+        startOneMinuteTimer()
+
+        let yesButton = app.buttons["meaningfulYesButton"]
+        XCTAssertTrue(yesButton.waitForExistence(timeout: 8))
+        yesButton.click()
+
+        let todayValue = app.staticTexts["meaningfulStatsTodayValue"]
+        XCTAssertTrue(todayValue.waitForExistence(timeout: 3))
+        XCTAssertTrue(todayValue.waitForValue("1m", timeout: 3))
+    }
+
+    @MainActor
+    func testMeaningfulPromptNoDoesNotUpdateTodayStats() throws {
+        app.launchArguments.append("--uitesting-fast-timers")
+        app.launch()
+
+        startOneMinuteTimer()
+
+        let noButton = app.buttons["meaningfulNoButton"]
+        XCTAssertTrue(noButton.waitForExistence(timeout: 8))
+        noButton.click()
+
+        let todayValue = app.staticTexts["meaningfulStatsTodayValue"]
+        XCTAssertTrue(todayValue.waitForExistence(timeout: 3))
+        XCTAssertTrue(todayValue.waitForValue("0m", timeout: 3))
+    }
+
+    private func startOneMinuteTimer() {
+        let minutesField = app.textFields["minutesField"]
+        XCTAssertTrue(minutesField.waitForExistence(timeout: 5))
+        minutesField.click()
+        minutesField.typeKey("a", modifierFlags: [.command])
+        minutesField.typeText("1")
+
+        app.buttons["startTimerButton"].click()
+    }
+}
+
+private extension XCUIElement {
+    func waitForValue(_ expectedValue: String, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "label == %@", expectedValue)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
 }
