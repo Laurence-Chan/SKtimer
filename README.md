@@ -23,6 +23,14 @@ SKtimer 是一个轻量的原生 macOS 倒计时工具，适合专注、休息�
 - Xcode 16 or newer for local development
 - Apple Developer Program membership for App Store upload, Developer ID signing, and notarization
 
+## Download
+
+Download the ready-to-run app from [`Downloads/SKtimer.app.zip`](Downloads/SKtimer.app.zip). Unzip it and move `SKtimer.app` to `/Applications`.
+
+This GitHub build is signed to run locally and is not notarized. If macOS blocks the first launch, right-click `SKtimer.app` and choose Open.
+
+SHA-256: `91b98a8a95842b3209cabd58b3a41b2af9ed60a199a1b129a5eca13da95610e7`
+
 ## Build and Run
 
 ```bash
