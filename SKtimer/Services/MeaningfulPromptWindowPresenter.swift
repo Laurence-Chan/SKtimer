@@ -50,6 +50,7 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         if activePromptID == prompt.id, let window {
             if activating && !window.isVisible {
                 NSApp.activate(ignoringOtherApps: true)
+                showMainTimerWindow()
                 window.makeKeyAndOrderFront(nil)
                 window.orderFrontRegardless()
             }
@@ -80,6 +81,7 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         window = promptWindow
         if activating {
             NSApp.activate(ignoringOtherApps: true)
+            showMainTimerWindow()
         }
         promptWindow.makeKeyAndOrderFront(nil)
         promptWindow.orderFrontRegardless()
@@ -113,5 +115,25 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         window?.close()
         window = nil
         activePromptID = nil
+    }
+
+    private func showMainTimerWindow() {
+        guard let mainWindow = NSApp.windows.first(where: { candidate in
+            candidate !== window &&
+                candidate.title == String(localized: "app.name") &&
+                !candidate.isMiniaturized
+        }) ?? NSApp.windows.first(where: { candidate in
+            candidate !== window &&
+                candidate.title == String(localized: "app.name")
+        }) else {
+            return
+        }
+
+        if mainWindow.isMiniaturized {
+            mainWindow.deminiaturize(nil)
+        }
+
+        mainWindow.makeKeyAndOrderFront(nil)
+        mainWindow.orderFrontRegardless()
     }
 }
