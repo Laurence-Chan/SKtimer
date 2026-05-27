@@ -9,11 +9,13 @@ final class TimerStore: ObservableObject {
     @Published private(set) var meaningfulTimeRecords: [MeaningfulTimeRecord]
     @Published private(set) var now: Date
 
+    private static let recentDurationLimit = 6
+
     private let persistence: TimerPersistence
     private let notificationScheduler: TimerNotificationScheduling
     private let soundPlayer: TimerSoundPlaying
     private let completionDelayOverrideForTesting: TimeInterval?
-    private var tickerTask: Task<Void, Never>?
+    private var completionTimer: Timer?
 
     init(
         persistence: TimerPersistence,
@@ -38,7 +40,7 @@ final class TimerStore: ObservableObject {
     }
 
     deinit {
-        tickerTask?.cancel()
+        completionTimer?.invalidate()
     }
 
     var activeTimers: [TimerRecord] {
@@ -56,11 +58,7 @@ final class TimerStore: ObservableObject {
     }
 
     var menuBarTitle: String {
-        guard let timer = nextRunningTimer else {
-            return String(localized: "app.name")
-        }
-
-        return TimerDurationFormatter.menuBar(seconds: timer.remainingSeconds(at: now))
+        menuBarTitle(at: Date())
     }
 
     var nextMeaningfulPrompt: PendingMeaningfulPrompt? {
@@ -71,25 +69,21 @@ final class TimerStore: ObservableObject {
         meaningfulStats(at: now)
     }
 
-    func startClock() {
-        guard tickerTask == nil else {
-            return
+    func menuBarTitle(at date: Date) -> String {
+        guard let timer = nextRunningTimer else {
+            return String(localized: "app.name")
         }
 
-        tickerTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-                guard !Task.isCancelled else {
-                    return
-                }
-                self?.tick()
-            }
-        }
+        return TimerDurationFormatter.menuBar(seconds: timer.remainingSeconds(at: date))
+    }
+
+    func startClock() {
+        scheduleNextCompletionTimer()
     }
 
     func stopClock() {
-        tickerTask?.cancel()
-        tickerTask = nil
+        completionTimer?.invalidate()
+        completionTimer = nil
     }
 
     @discardableResult
@@ -105,32 +99,42 @@ final class TimerStore: ObservableObject {
         rememberDuration(durationMinutes)
         persist()
         notificationScheduler.scheduleCompletion(for: timer)
+        scheduleNextCompletionTimer()
         return timer
     }
 
     func pauseTimer(id: UUID, at date: Date? = nil) {
+        let date = date ?? Date()
+        now = date
         mutateTimer(id: id) { timer in
-            timer.pause(at: date ?? now)
+            timer.pause(at: date)
             notificationScheduler.cancelNotification(for: id)
         }
+        scheduleNextCompletionTimer()
     }
 
     func resumeTimer(id: UUID, at date: Date? = nil) {
+        let date = date ?? Date()
+        now = date
         mutateTimer(id: id) { timer in
-            timer.resume(at: date ?? now)
+            timer.resume(at: date)
             notificationScheduler.scheduleCompletion(for: timer)
         }
+        scheduleNextCompletionTimer()
     }
 
     func restartTimer(id: UUID, at date: Date? = nil) {
+        let date = date ?? Date()
+        now = date
         mutateTimer(id: id) { timer in
-            timer.restart(at: date ?? now)
+            timer.restart(at: date)
             if let completionDelayOverrideForTesting {
-                timer.endDate = (date ?? now).addingTimeInterval(completionDelayOverrideForTesting)
+                timer.endDate = date.addingTimeInterval(completionDelayOverrideForTesting)
             }
             rememberDuration(timer.durationMinutes)
             notificationScheduler.scheduleCompletion(for: timer)
         }
+        scheduleNextCompletionTimer()
     }
 
     func deleteTimer(id: UUID) {
@@ -138,6 +142,7 @@ final class TimerStore: ObservableObject {
         pendingMeaningfulPrompts.removeAll { $0.sourceTimerID == id }
         notificationScheduler.cancelNotification(for: id)
         persist()
+        scheduleNextCompletionTimer()
     }
 
     func clearCompletedTimers() {
@@ -146,6 +151,7 @@ final class TimerStore: ObservableObject {
         pendingMeaningfulPrompts.removeAll { completedIDs.contains($0.sourceTimerID) }
         completedIDs.forEach(notificationScheduler.cancelNotification)
         persist()
+        scheduleNextCompletionTimer()
     }
 
     func tick(at date: Date = Date()) {
@@ -168,6 +174,7 @@ final class TimerStore: ObservableObject {
         }
 
         persist()
+        scheduleNextCompletionTimer()
     }
 
     func answerMeaningfulPrompt(id: UUID, wasMeaningful: Bool, at date: Date = Date()) {
@@ -182,27 +189,52 @@ final class TimerStore: ObservableObject {
             durationSeconds: prompt.durationSeconds,
             completedAt: prompt.completedAt,
             answeredAt: date,
-            wasMeaningful: wasMeaningful
+            wasMeaningful: wasMeaningful,
+            focusSegments: prompt.focusSegments
         ))
         persist()
+    }
+
+    private func scheduleNextCompletionTimer() {
+        completionTimer?.invalidate()
+        completionTimer = nil
+
+        guard let nextTimer = nextRunningTimer else {
+            return
+        }
+
+        let interval = max(0.1, nextTimer.endDate.timeIntervalSince(Date()))
+        completionTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.tick()
+            }
+        }
     }
 
     func meaningfulStats(at date: Date, calendar: Calendar = .current) -> MeaningfulTimeStats {
         let meaningfulRecords = meaningfulTimeRecords.filter(\.wasMeaningful)
 
-        guard
-            let dayInterval = calendar.dateInterval(of: .day, for: date),
-            let weekInterval = calendar.dateInterval(of: .weekOfYear, for: date),
-            let monthInterval = calendar.dateInterval(of: .month, for: date)
-        else {
-            return .empty
-        }
-
         return MeaningfulTimeStats(
-            todaySeconds: Self.totalSeconds(in: dayInterval, records: meaningfulRecords),
-            weekSeconds: Self.totalSeconds(in: weekInterval, records: meaningfulRecords),
-            monthSeconds: Self.totalSeconds(in: monthInterval, records: meaningfulRecords)
+            todaySeconds: Self.totalSeconds(in: Self.rollingInterval(for: .daily, endingAt: date), records: meaningfulRecords),
+            weekSeconds: Self.totalSeconds(in: Self.rollingInterval(for: .weekly, endingAt: date), records: meaningfulRecords),
+            monthSeconds: Self.totalSeconds(in: Self.rollingInterval(for: .monthly, endingAt: date), records: meaningfulRecords)
         )
+    }
+
+    func meaningfulChartBars(for period: MeaningfulStatsPeriod, at date: Date? = nil, calendar: Calendar = .current) -> [MeaningfulChartBar] {
+        let date = date ?? now
+        let meaningfulRecords = meaningfulTimeRecords.filter(\.wasMeaningful)
+        let interval = Self.rollingInterval(for: period, endingAt: date)
+
+        return Self.chartBuckets(for: period, in: interval, calendar: calendar).map { bucket in
+            MeaningfulChartBar(
+                id: "\(period.rawValue)-\(bucket.startAt.timeIntervalSinceReferenceDate)",
+                label: Self.chartLabel(for: period, startAt: bucket.startAt, endAt: bucket.endAt, calendar: calendar),
+                startAt: bucket.startAt,
+                endAt: bucket.endAt,
+                seconds: Self.totalSeconds(in: DateInterval(start: bucket.startAt, end: bucket.endAt), records: meaningfulRecords)
+            )
+        }
     }
 
     private func mutateTimer(id: UUID, mutation: (inout TimerRecord) -> Void) {
@@ -218,7 +250,7 @@ final class TimerStore: ObservableObject {
         let validDuration = min(max(durationMinutes, TimerRecord.minimumMinutes), TimerRecord.maximumMinutes)
         recentDurations.removeAll { $0 == validDuration }
         recentDurations.insert(validDuration, at: 0)
-        recentDurations = Array(recentDurations.prefix(4))
+        recentDurations = Array(recentDurations.prefix(Self.recentDurationLimit))
     }
 
     private func recoverExpiredTimers(at date: Date) {
@@ -250,7 +282,8 @@ final class TimerStore: ObservableObject {
                     sourceTimerID: timer.id,
                     durationSeconds: timer.durationSeconds,
                     completedAt: completedAt,
-                    createdAt: createdAt
+                    createdAt: createdAt,
+                    focusSegments: timer.focusSegments
                 )
             }
 
@@ -295,7 +328,7 @@ final class TimerStore: ObservableObject {
                 result.append(duration)
             }
 
-            if result.count == 4 {
+            if result.count == Self.recentDurationLimit {
                 break
             }
         }
@@ -313,9 +346,108 @@ final class TimerStore: ObservableObject {
         }
     }
 
+    private static func rollingInterval(for period: MeaningfulStatsPeriod, endingAt date: Date) -> DateInterval {
+        DateInterval(start: date.addingTimeInterval(-period.durationSeconds), end: date)
+    }
+
+    private static func chartBuckets(for period: MeaningfulStatsPeriod, in interval: DateInterval, calendar: Calendar) -> [(startAt: Date, endAt: Date)] {
+        switch period {
+        case .daily:
+            return calendarAlignedBuckets(in: interval, component: .hour, calendar: calendar)
+        case .weekly:
+            return calendarAlignedBuckets(in: interval, component: .day, calendar: calendar)
+        case .monthly:
+            return rollingBuckets(in: interval, dayCount: 7, calendar: calendar)
+        }
+    }
+
+    private static func calendarAlignedBuckets(in interval: DateInterval, component: Calendar.Component, calendar: Calendar) -> [(startAt: Date, endAt: Date)] {
+        let firstBucketStart = calendar.dateInterval(of: component, for: interval.start)?.start ?? interval.start
+        var buckets: [(startAt: Date, endAt: Date)] = []
+        var cursor = firstBucketStart
+
+        while cursor < interval.end {
+            guard let next = calendar.date(byAdding: component, value: 1, to: cursor), next > cursor else {
+                break
+            }
+
+            let startAt = max(cursor, interval.start)
+            let endAt = min(next, interval.end)
+            if endAt > startAt {
+                buckets.append((startAt, endAt))
+            }
+
+            cursor = next
+        }
+
+        return buckets
+    }
+
+    private static func rollingBuckets(in interval: DateInterval, dayCount: Int, calendar: Calendar) -> [(startAt: Date, endAt: Date)] {
+        var buckets: [(startAt: Date, endAt: Date)] = []
+        var cursor = interval.start
+
+        while cursor < interval.end {
+            guard let next = calendar.date(byAdding: .day, value: dayCount, to: cursor), next > cursor else {
+                break
+            }
+
+            let endAt = min(next, interval.end)
+            buckets.append((cursor, endAt))
+            cursor = next
+        }
+
+        return buckets
+    }
+
+    private static func chartLabel(for period: MeaningfulStatsPeriod, startAt: Date, endAt: Date, calendar: Calendar) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+
+        switch period {
+        case .daily:
+            formatter.dateFormat = "ha"
+            return formatter.string(from: startAt).lowercased()
+        case .weekly:
+            formatter.dateFormat = "E M/d"
+            return formatter.string(from: startAt)
+        case .monthly:
+            formatter.dateFormat = "M/d"
+            let startLabel = formatter.string(from: startAt)
+            let endLabel = formatter.string(from: endAt.addingTimeInterval(-1))
+            return startLabel == endLabel ? startLabel : "\(startLabel)-\(endLabel)"
+        }
+    }
+
     private static func totalSeconds(in interval: DateInterval, records: [MeaningfulTimeRecord]) -> Int {
         records.reduce(0) { total, record in
-            interval.contains(record.completedAt) ? total + record.durationSeconds : total
+            total + totalSeconds(in: interval, record: record)
         }
+    }
+
+    private static func totalSeconds(in interval: DateInterval, record: MeaningfulTimeRecord) -> Int {
+        focusSegments(for: record).reduce(0) { total, segment in
+            let startAt = max(interval.start, segment.startAt)
+            let endAt = min(interval.end, segment.endAt)
+            guard endAt > startAt else {
+                return total
+            }
+
+            return total + Int(endAt.timeIntervalSince(startAt))
+        }
+    }
+
+    private static func focusSegments(for record: MeaningfulTimeRecord) -> [FocusTimeSegment] {
+        if !record.focusSegments.isEmpty {
+            return record.focusSegments
+        }
+
+        return [
+            FocusTimeSegment(
+                startAt: record.completedAt.addingTimeInterval(TimeInterval(-record.durationSeconds)),
+                endAt: record.completedAt
+            )
+        ]
     }
 }

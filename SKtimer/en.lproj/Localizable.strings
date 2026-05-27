@@ -4,7 +4,7 @@
 "command.showMainWindow" = "Show SKtimer";
 
 "toolbar.notifications" = "Notifications";
-"toolbar.notifications.help" = "Request notification permission";
+"toolbar.notifications.help" = "Open notification settings";
 
 "timer.input.title" = "Start a timer";
 "timer.input.hours" = "Hours";
@@ -34,6 +34,13 @@
 "meaningful.stats.today" = "Today";
 "meaningful.stats.week" = "This Week";
 "meaningful.stats.month" = "This Month";
+"meaningful.stats.daily" = "Daily";
+"meaningful.stats.weekly" = "Weekly";
+"meaningful.stats.monthly" = "Monthly";
+"meaningful.chart.daily.title" = "Past 24 hours";
+"meaningful.chart.weekly.title" = "Past 7 days";
+"meaningful.chart.monthly.title" = "Past 30 days";
+"meaningful.chart.empty" = "No meaningful time in this period.";
 "meaningful.prompt.windowTitle" = "Timer Complete";
 "meaningful.prompt.title" = "A moment to mark";
 "meaningful.prompt.question" = "Did this time feel meaningful?";
@@ -54,7 +61,15 @@
 "settings.notifications.title" = "Notifications";
 "settings.notifications.request" = "Request Permission";
 "settings.notifications.openSystem" = "Open System Settings";
-"settings.notifications.description" = "SKtimer uses local macOS notifications only. No data leaves your Mac.";
+"settings.notifications.description" = "SKtimer uses local macOS notifications only. Custom sounds must be AIFF, WAV, or CAF files under 30 seconds. No data leaves your Mac.";
+"settings.notifications.sound.title" = "Sound";
+"settings.notifications.sound.systemStatus" = "System default";
+"settings.notifications.sound.choose" = "Choose File";
+"settings.notifications.sound.preview" = "Preview";
+"settings.notifications.sound.system" = "Use System";
+"settings.notifications.sound.panelTitle" = "Choose Notification Sound";
+"settings.notifications.sound.panelPrompt" = "Choose";
+"settings.notifications.sound.importError" = "Use an AIFF, WAV, or CAF sound under 30 seconds.";
 "settings.notifications.notDetermined" = "Not Requested";
 "settings.notifications.denied" = "Denied";
 "settings.notifications.authorized" = "Allowed";

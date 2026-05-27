@@ -20,9 +20,17 @@ final class NotificationScheduler: NSObject, ObservableObject, TimerNotification
 
     private let center: UNUserNotificationCenter
     private let isTesting: Bool
+    private weak var preferences: TimerPreferences?
+    private var didRequestAuthorization = false
+    private var isRequestingAuthorization = false
 
-    init(center: UNUserNotificationCenter = .current(), isTesting: Bool = RuntimeEnvironment.isAnyTesting) {
+    init(
+        center: UNUserNotificationCenter = .current(),
+        preferences: TimerPreferences? = nil,
+        isTesting: Bool = RuntimeEnvironment.isAnyTesting
+    ) {
         self.center = center
+        self.preferences = preferences
         self.isTesting = isTesting
         super.init()
         center.delegate = self
@@ -30,7 +38,7 @@ final class NotificationScheduler: NSObject, ObservableObject, TimerNotification
     }
 
     var canDeliverAudibleNotifications: Bool {
-        authorizationStatus == .authorized || authorizationStatus == .provisional
+        Self.canDeliverAudibleNotifications(for: authorizationStatus)
     }
 
     var authorizationLabelKey: String {
@@ -56,9 +64,24 @@ final class NotificationScheduler: NSObject, ObservableObject, TimerNotification
             return
         }
 
+        guard !isRequestingAuthorization else {
+            return
+        }
+
+        guard !didRequestAuthorization else {
+            refreshAuthorizationStatus()
+            return
+        }
+
+        didRequestAuthorization = true
+        isRequestingAuthorization = true
+
         Task { @MainActor [weak self] in
             guard let self else {
                 return
+            }
+            defer {
+                isRequestingAuthorization = false
             }
 
             let settings = await center.notificationSettings()
@@ -105,14 +128,33 @@ final class NotificationScheduler: NSObject, ObservableObject, TimerNotification
     }
 
     func deliverCompletion(for timer: TimerRecord) {
-        cancelNotification(for: timer.id)
+        let identifier = notificationIdentifier(for: timer.id)
+        let request = UNNotificationRequest(identifier: identifier, content: notificationContent(for: timer), trigger: nil)
 
-        guard canDeliverAudibleNotifications else {
-            return
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            let settings = await center.notificationSettings()
+            authorizationStatus = settings.authorizationStatus
+
+            guard Self.canDeliverAudibleNotifications(for: settings.authorizationStatus) else {
+                return
+            }
+
+            async let pendingRequests = center.pendingNotificationRequests()
+            async let deliveredNotifications = center.deliveredNotifications()
+
+            let hasPendingRequest = await pendingRequests.contains { $0.identifier == identifier }
+            let hasDeliveredNotification = await deliveredNotifications.contains { $0.request.identifier == identifier }
+
+            guard !hasPendingRequest, !hasDeliveredNotification else {
+                return
+            }
+
+            try? await center.add(request)
         }
-
-        let request = UNNotificationRequest(identifier: notificationIdentifier(for: timer.id), content: notificationContent(for: timer), trigger: nil)
-        center.add(request)
     }
 
     func cancelNotification(for id: UUID) {
@@ -138,6 +180,10 @@ final class NotificationScheduler: NSObject, ObservableObject, TimerNotification
         "SKtimer.timer.\(id.uuidString)"
     }
 
+    private static func canDeliverAudibleNotifications(for status: UNAuthorizationStatus) -> Bool {
+        status == .authorized || status == .provisional
+    }
+
     private func notificationContent(for timer: TimerRecord) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = String(localized: "notification.timerComplete.title")
@@ -145,7 +191,16 @@ final class NotificationScheduler: NSObject, ObservableObject, TimerNotification
             format: String(localized: "notification.timerComplete.body"),
             TimerDurationFormatter.compact(minutes: timer.durationMinutes)
         )
-        content.sound = .default
+        if
+            let fileName = preferences?.notificationSoundFileName,
+            let url = preferences?.notificationSoundURL,
+            FileManager.default.fileExists(atPath: url.path)
+        {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(fileName))
+        } else {
+            content.sound = .default
+        }
+        content.interruptionLevel = .timeSensitive
         return content
     }
 }

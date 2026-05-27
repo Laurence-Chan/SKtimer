@@ -13,6 +13,7 @@ The app stores only local app state on the user's Mac:
 - Meaningful completion answers and local meaningful time totals
 - Menu bar preferences
 - Notification permission status managed by macOS
+- Selected custom notification sound file, if the user chooses one
 
 This data is stored locally and is not sent anywhere.
 
@@ -26,7 +27,7 @@ SKtimer does not include analytics, advertising, tracking, crash reporting SDKs,
 
 ## Notifications
 
-SKtimer uses local macOS notifications to alert the user when a timer completes. Notification permission is controlled by macOS System Settings.
+SKtimer uses local macOS notifications to alert the user when a timer completes. Notification permission is controlled by macOS System Settings. If the user chooses a custom notification sound, the selected sound file is copied into local app storage and used only for timer alerts.
 
 ## Contact
 
@@ -49,6 +50,7 @@ SKtimer 不会收集、传输、出售、共享或分析用户数据。
 - 倒计时完成后的 meaningful 回答和本地统计
 - 菜单栏偏好设置
 - 由 macOS 管理的通知权限状态
+- 用户选择的自定义通知声音文件（如果有）
 
 这些数据只保存在本机，不会被发送到任何地方。
 
@@ -62,4 +64,4 @@ SKtimer 不包含分析、广告、跟踪、崩溃上报 SDK 或第三方遥测�
 
 ## 通知
 
-SKtimer 使用本地 macOS 通知在倒计时完成时提醒用户。通知权限由 macOS 系统设置控制。
+SKtimer 使用本地 macOS 通知在倒计时完成时提醒用户。通知权限由 macOS 系统设置控制。如果用户选择自定义通知声音，所选声音文件会复制到本地应用存储中，并且只用于倒计时提醒。

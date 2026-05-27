@@ -1,7 +1,7 @@
 import Foundation
 
 struct TimerStoreSnapshot: Codable, Equatable {
-    static let currentVersion = 2
+    static let currentVersion = 3
 
     var version: Int
     var timers: [TimerRecord]

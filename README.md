@@ -9,11 +9,11 @@ SKtimer 是一个轻量的原生 macOS 倒计时工具，适合专注、休息�
 - Fully offline: no account, network calls, analytics, ads, or tracking.
 - Multiple simultaneous timers.
 - Hour/minute input with minute precision.
-- Recent duration shortcuts with a four-item MRU list.
+- Recent duration shortcuts with a six-item MRU list.
 - Pause, resume, restart, and delete for each timer.
 - Menu bar countdown for the next finishing running timer.
-- Local macOS notifications and system sound.
-- Meaningful completion prompt with local Today / This Week / This Month totals.
+- Local macOS notifications with system or custom sound.
+- Meaningful completion prompt with rolling Daily / Weekly / Monthly totals and charts.
 - Restores running timers after relaunch by comparing real elapsed time.
 - English and Simplified Chinese localization.
 
@@ -36,8 +36,6 @@ Useful modes:
 ./script/build_and_run.sh --logs
 ./script/build_and_run.sh --debug
 ```
-
-The Codex desktop Run action is wired to the same script through `.codex/environments/environment.toml`.
 
 ## Release
 

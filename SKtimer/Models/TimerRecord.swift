@@ -29,6 +29,8 @@ struct TimerRecord: Identifiable, Codable, Equatable {
     var pausedRemainingSeconds: Int?
     var completedAt: Date?
     var state: TimerState
+    var focusSegments: [FocusTimeSegment]
+    var activeFocusStartedAt: Date?
 
     init(id: UUID = UUID(), durationMinutes: Int, now: Date = Date()) {
         let durationSeconds = durationMinutes * 60
@@ -40,6 +42,26 @@ struct TimerRecord: Identifiable, Codable, Equatable {
         self.pausedRemainingSeconds = nil
         self.completedAt = nil
         self.state = .running
+        self.focusSegments = []
+        self.activeFocusStartedAt = now
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        durationSeconds = try container.decode(Int.self, forKey: .durationSeconds)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        endDate = try container.decode(Date.self, forKey: .endDate)
+        pausedRemainingSeconds = try container.decodeIfPresent(Int.self, forKey: .pausedRemainingSeconds)
+        completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt)
+        state = try container.decode(TimerState.self, forKey: .state)
+        focusSegments = try container.decodeIfPresent([FocusTimeSegment].self, forKey: .focusSegments) ?? []
+        activeFocusStartedAt = try container.decodeIfPresent(Date.self, forKey: .activeFocusStartedAt)
+
+        if state == .running, activeFocusStartedAt == nil {
+            activeFocusStartedAt = startedAt
+        }
     }
 
     var durationMinutes: Int {
@@ -79,6 +101,7 @@ struct TimerRecord: Identifiable, Codable, Equatable {
             return
         }
 
+        appendActiveFocusSegment(endingAt: date)
         pausedRemainingSeconds = remainingSeconds(at: date)
         state = .paused
     }
@@ -93,6 +116,7 @@ struct TimerRecord: Identifiable, Codable, Equatable {
         endDate = date.addingTimeInterval(TimeInterval(remaining))
         pausedRemainingSeconds = nil
         completedAt = nil
+        activeFocusStartedAt = date
         state = .running
     }
 
@@ -101,12 +125,16 @@ struct TimerRecord: Identifiable, Codable, Equatable {
         endDate = date.addingTimeInterval(TimeInterval(durationSeconds))
         pausedRemainingSeconds = nil
         completedAt = nil
+        focusSegments = []
+        activeFocusStartedAt = date
         state = .running
     }
 
     mutating func complete(at date: Date? = nil) {
+        let completedDate = date ?? endDate
+        appendActiveFocusSegment(endingAt: completedDate)
         pausedRemainingSeconds = 0
-        completedAt = date ?? endDate
+        completedAt = completedDate
         state = .completed
     }
 
@@ -117,5 +145,15 @@ struct TimerRecord: Identifiable, Codable, Equatable {
 
         complete(at: endDate)
         return true
+    }
+
+    private mutating func appendActiveFocusSegment(endingAt endAt: Date) {
+        guard let startAt = activeFocusStartedAt, endAt > startAt else {
+            activeFocusStartedAt = nil
+            return
+        }
+
+        focusSegments.append(FocusTimeSegment(startAt: startAt, endAt: endAt))
+        activeFocusStartedAt = nil
     }
 }

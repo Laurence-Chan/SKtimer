@@ -8,7 +8,7 @@ Highlights:
 - Multiple simultaneous timers
 - Menu bar countdown
 - Recent timer shortcuts
-- Local notifications and system sound
+- Local notifications with system or custom sound
 - English and Simplified Chinese
 
 SKtimer collects no data.

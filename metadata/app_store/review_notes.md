@@ -9,3 +9,4 @@ SKtimer is a fully offline macOS timer. It does not require an account, does not
 - Network access: None
 - In-app purchases: None
 - Ads or analytics: None
+- Permissions: local notifications; optional user-selected audio file for custom notification sound, copied and stored locally

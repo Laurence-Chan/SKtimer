@@ -21,7 +21,7 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         store.$pendingMeaningfulPrompts
             .sink { [weak self] _ in
                 Task { @MainActor [weak self] in
-                    self?.presentNextPromptIfNeeded()
+                    self?.presentNextPromptIfNeeded(activating: true)
                 }
             }
             .store(in: &cancellables)
@@ -29,15 +29,15 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in
                 Task { @MainActor [weak self] in
-                    self?.presentNextPromptIfNeeded()
+                    self?.presentNextPromptIfNeeded(activating: false)
                 }
             }
             .store(in: &cancellables)
 
-        presentNextPromptIfNeeded()
+        presentNextPromptIfNeeded(activating: true)
     }
 
-    func presentNextPromptIfNeeded() {
+    func presentNextPromptIfNeeded(activating: Bool = true) {
         guard !RuntimeEnvironment.isUnitTesting, let store else {
             return
         }
@@ -48,8 +48,11 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         }
 
         if activePromptID == prompt.id, let window {
-            NSApp.activate(ignoringOtherApps: true)
-            window.makeKeyAndOrderFront(nil)
+            if activating && !window.isVisible {
+                NSApp.activate(ignoringOtherApps: true)
+                window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
+            }
             return
         }
 
@@ -71,12 +74,15 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         promptWindow.delegate = self
         promptWindow.isReleasedWhenClosed = false
         promptWindow.level = .floating
-        promptWindow.collectionBehavior = [.moveToActiveSpace]
+        promptWindow.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         promptWindow.center()
 
         window = promptWindow
-        NSApp.activate(ignoringOtherApps: true)
+        if activating {
+            NSApp.activate(ignoringOtherApps: true)
+        }
         promptWindow.makeKeyAndOrderFront(nil)
+        promptWindow.orderFrontRegardless()
     }
 
     func windowWillClose(_ notification: Notification) {
@@ -86,6 +92,10 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
 
         window = nil
         activePromptID = nil
+
+        Task { @MainActor [weak self] in
+            self?.presentNextPromptIfNeeded(activating: false)
+        }
     }
 
     private func answer(promptID: UUID, wasMeaningful: Bool) {

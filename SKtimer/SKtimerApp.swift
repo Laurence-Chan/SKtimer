@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    static var bootstrap: (() -> Void)?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !RuntimeEnvironment.isUnitTesting else {
             return
@@ -9,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+        Self.bootstrap?()
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -27,6 +30,7 @@ struct SKtimerApp: App {
     @StateObject private var preferences: TimerPreferences
     @StateObject private var notificationScheduler: NotificationScheduler
     @StateObject private var meaningfulPromptPresenter: MeaningfulPromptWindowPresenter
+    @StateObject private var statusBarController: StatusBarController
     @StateObject private var store: TimerStore
     private let isUnitTesting: Bool
 
@@ -43,19 +47,30 @@ struct SKtimerApp: App {
             TimerPreferences.resetStoredValues()
         }
 
-        let scheduler = NotificationScheduler(isTesting: isTesting)
+        let preferences = TimerPreferences()
+        let scheduler = NotificationScheduler(preferences: preferences, isTesting: isTesting)
+        let presenter = MeaningfulPromptWindowPresenter()
+        let statusController = StatusBarController()
         let store = TimerStore(
             persistence: persistence,
             notificationScheduler: scheduler,
-            soundPlayer: SystemSoundPlayer(),
+            soundPlayer: SystemSoundPlayer(preferences: preferences),
             completionDelayOverrideForTesting: completionDelayOverrideForTesting
         )
 
-        _preferences = StateObject(wrappedValue: TimerPreferences())
+        _preferences = StateObject(wrappedValue: preferences)
         _notificationScheduler = StateObject(wrappedValue: scheduler)
-        _meaningfulPromptPresenter = StateObject(wrappedValue: MeaningfulPromptWindowPresenter())
+        _meaningfulPromptPresenter = StateObject(wrappedValue: presenter)
+        _statusBarController = StateObject(wrappedValue: statusController)
         _store = StateObject(wrappedValue: store)
         isUnitTesting = RuntimeEnvironment.isUnitTesting
+
+        AppDelegate.bootstrap = {
+            presenter.bind(to: store)
+            statusController.bind(store: store, preferences: preferences)
+            scheduler.requestAuthorizationIfNeeded()
+            store.startClock()
+        }
     }
 
     var body: some Scene {
@@ -64,18 +79,9 @@ struct SKtimerApp: App {
                 .environmentObject(store)
                 .environmentObject(preferences)
                 .environmentObject(notificationScheduler)
-                .frame(minWidth: 680, minHeight: 520)
-                .onAppear {
-                    guard !isUnitTesting else {
-                        return
-                    }
-
-                    meaningfulPromptPresenter.bind(to: store)
-                    notificationScheduler.requestAuthorizationIfNeeded()
-                    store.startClock()
-                }
+                .frame(minWidth: 600, minHeight: 480)
         }
-        .defaultSize(width: 720, height: 560)
+        .defaultSize(width: 640, height: 520)
         .commands {
             SKtimerCommands()
         }
@@ -87,24 +93,6 @@ struct SKtimerApp: App {
                 .frame(width: 420)
                 .padding(24)
         }
-
-        MenuBarExtra(isInserted: Binding(
-            get: { preferences.showMenuBar },
-            set: { preferences.showMenuBar = $0 }
-        )) {
-            MenuBarTimerView()
-                .environmentObject(store)
-                .environmentObject(preferences)
-        } label: {
-            Label {
-                Text(preferences.showMenuBarCountdown ? store.menuBarTitle : String(localized: "app.name"))
-                    .monospacedDigit()
-            } icon: {
-                Image(systemName: "timer")
-            }
-            .accessibilityLabel(Text("menuBar.accessibility.label"))
-        }
-        .menuBarExtraStyle(.menu)
     }
 }
 

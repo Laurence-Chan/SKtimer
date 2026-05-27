@@ -4,7 +4,7 @@
 "command.showMainWindow" = "显示 SKtimer";
 
 "toolbar.notifications" = "通知";
-"toolbar.notifications.help" = "请求通知权限";
+"toolbar.notifications.help" = "打开通知设置";
 
 "timer.input.title" = "开始倒计时";
 "timer.input.hours" = "小时";
@@ -34,6 +34,13 @@
 "meaningful.stats.today" = "今天";
 "meaningful.stats.week" = "本周";
 "meaningful.stats.month" = "本月";
+"meaningful.stats.daily" = "每日";
+"meaningful.stats.weekly" = "每周";
+"meaningful.stats.monthly" = "每月";
+"meaningful.chart.daily.title" = "过去 24 小时";
+"meaningful.chart.weekly.title" = "过去 7 天";
+"meaningful.chart.monthly.title" = "过去 30 天";
+"meaningful.chart.empty" = "这段时间暂无有意义时间。";
 "meaningful.prompt.windowTitle" = "倒计时完成";
 "meaningful.prompt.title" = "记录这一刻";
 "meaningful.prompt.question" = "这段时间对你来说有意义吗？";
@@ -54,7 +61,15 @@
 "settings.notifications.title" = "通知";
 "settings.notifications.request" = "请求权限";
 "settings.notifications.openSystem" = "打开系统设置";
-"settings.notifications.description" = "SKtimer 只使用本地 macOS 通知。没有任何数据会离开你的 Mac。";
+"settings.notifications.description" = "SKtimer 只使用本地 macOS 通知。自定义声音必须是 30 秒以内的 AIFF、WAV 或 CAF 文件。没有任何数据会离开你的 Mac。";
+"settings.notifications.sound.title" = "声音";
+"settings.notifications.sound.systemStatus" = "系统默认";
+"settings.notifications.sound.choose" = "选择文件";
+"settings.notifications.sound.preview" = "试听";
+"settings.notifications.sound.system" = "使用系统";
+"settings.notifications.sound.panelTitle" = "选择通知声音";
+"settings.notifications.sound.panelPrompt" = "选择";
+"settings.notifications.sound.importError" = "请使用 30 秒以内的 AIFF、WAV 或 CAF 声音文件。";
 "settings.notifications.notDetermined" = "尚未请求";
 "settings.notifications.denied" = "已拒绝";
 "settings.notifications.authorized" = "已允许";
