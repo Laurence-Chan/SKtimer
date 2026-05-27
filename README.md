@@ -13,7 +13,7 @@ SKtimer 是一个轻量的原生 macOS 倒计时工具，适合专注、休息�
 - Pause, resume, restart, and delete for each timer.
 - Menu bar countdown for the next finishing running timer.
 - Local macOS notifications with system or custom sound.
-- Meaningful completion prompt with rolling Daily / Weekly / Monthly totals and charts.
+- Meaningful completion prompt with rolling 24H / Past 7 Days / Past 30 Days totals and charts.
 - Restores running timers after relaunch by comparing real elapsed time.
 - English and Simplified Chinese localization.
 

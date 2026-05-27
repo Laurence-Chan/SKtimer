@@ -304,6 +304,7 @@ private struct DurationField: View {
 
             TextField("0", text: $text)
                 .textFieldStyle(.plain)
+                .tint(.clear)
                 .font(.system(.title2, design: .rounded, weight: .medium).monospacedDigit())
                 .multilineTextAlignment(.center)
                 .frame(width: 76, height: 38)

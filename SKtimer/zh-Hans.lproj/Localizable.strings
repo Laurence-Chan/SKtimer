@@ -34,9 +34,9 @@
 "meaningful.stats.today" = "今天";
 "meaningful.stats.week" = "本周";
 "meaningful.stats.month" = "本月";
-"meaningful.stats.daily" = "每日";
-"meaningful.stats.weekly" = "每周";
-"meaningful.stats.monthly" = "每月";
+"meaningful.stats.daily" = "24H";
+"meaningful.stats.weekly" = "过去7天";
+"meaningful.stats.monthly" = "过去30天";
 "meaningful.chart.daily.title" = "过去 24 小时";
 "meaningful.chart.weekly.title" = "过去 7 天";
 "meaningful.chart.monthly.title" = "过去 30 天";

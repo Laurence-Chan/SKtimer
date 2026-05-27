@@ -34,9 +34,9 @@
 "meaningful.stats.today" = "Today";
 "meaningful.stats.week" = "This Week";
 "meaningful.stats.month" = "This Month";
-"meaningful.stats.daily" = "Daily";
-"meaningful.stats.weekly" = "Weekly";
-"meaningful.stats.monthly" = "Monthly";
+"meaningful.stats.daily" = "24H";
+"meaningful.stats.weekly" = "Past 7 Days";
+"meaningful.stats.monthly" = "Past 30 Days";
 "meaningful.chart.daily.title" = "Past 24 hours";
 "meaningful.chart.weekly.title" = "Past 7 days";
 "meaningful.chart.monthly.title" = "Past 30 days";
