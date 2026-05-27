@@ -20,7 +20,7 @@
 "timer.error.durationTooShort" = "Timer duration must be at least 1 minute.";
 "timer.error.durationTooLong" = "Timer duration cannot be longer than 999h 59m.";
 "timer.recent.title" = "Recent";
-"timer.recent.accessibility" = "Start a %@ timer";
+"timer.recent.accessibility" = "Fill in a %@ timer";
 "timer.list.title" = "Timers";
 "timer.clearCompleted" = "Clear Done";
 "timer.empty.title" = "No timers";

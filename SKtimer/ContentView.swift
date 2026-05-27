@@ -18,18 +18,18 @@ struct ContentView: View {
                 }
             )
 
+            RecentDurationsStrip(
+                durations: store.recentDurations,
+                selectDuration: selectRecentDuration,
+                accessibilityLabel: timerAccessibilityLabel
+            )
+
             StartTimerPanel(
                 hoursText: $hoursText,
                 minutesText: $minutesText,
                 inputError: inputError,
                 focusedField: $focusedField,
                 startTimer: startTimer
-            )
-
-            RecentDurationsStrip(
-                durations: store.recentDurations,
-                startDuration: startRecentTimer,
-                accessibilityLabel: timerAccessibilityLabel
             )
 
             TimerListPanel(
@@ -71,9 +71,14 @@ struct ContentView: View {
         }
     }
 
-    private func startRecentTimer(duration: Int) {
-        store.startTimer(durationMinutes: duration)
+    private func selectRecentDuration(duration: Int) {
+        let hours = duration / 60
+        let minutes = duration % 60
+
+        hoursText = hours == 0 ? "" : "\(hours)"
+        minutesText = "\(minutes)"
         inputError = nil
+        focusedField = hours > 0 ? .hours : .minutes
     }
 
     private func pauseOrResume(timer: TimerRecord) {
@@ -295,11 +300,15 @@ private struct DurationField: View {
     let focus: TimerInputField
     @FocusState.Binding var focusedField: TimerInputField?
 
+    private var isFocused: Bool {
+        focusedField == focus
+    }
+
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
             Text(titleKey)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(isFocused ? Color.accentColor : .secondary)
                 .frame(width: 76, alignment: .center)
 
             TextField("0", text: $text)
@@ -308,20 +317,30 @@ private struct DurationField: View {
                 .font(.system(.title2, design: .rounded, weight: .medium).monospacedDigit())
                 .multilineTextAlignment(.center)
                 .frame(width: 76, height: 38)
-                .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: DesignSystem.Radius.small, style: .continuous))
+                .background(fieldBackground, in: RoundedRectangle(cornerRadius: DesignSystem.Radius.small, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: DesignSystem.Radius.small, style: .continuous)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(isFocused ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: isFocused ? 2 : 1)
                 }
+                .shadow(color: isFocused ? Color.accentColor.opacity(0.22) : .clear, radius: 6, y: 1)
                 .focused($focusedField, equals: focus)
                 .accessibilityIdentifier(identifier)
         }
+        .animation(.easeOut(duration: 0.12), value: isFocused)
+    }
+
+    private var fieldBackground: Color {
+        if isFocused {
+            return Color.accentColor.opacity(0.08)
+        }
+
+        return Color(nsColor: .textBackgroundColor)
     }
 }
 
 private struct RecentDurationsStrip: View {
     let durations: [Int]
-    let startDuration: (Int) -> Void
+    let selectDuration: (Int) -> Void
     let accessibilityLabel: (Int) -> String
 
     var body: some View {
@@ -329,7 +348,7 @@ private struct RecentDurationsStrip: View {
             HStack(spacing: 10) {
                 ForEach(durations, id: \.self) { duration in
                     Button {
-                        startDuration(duration)
+                        selectDuration(duration)
                     } label: {
                         Text(TimerDurationFormatter.compact(minutes: duration))
                             .font(.system(.callout, design: .rounded, weight: .medium))

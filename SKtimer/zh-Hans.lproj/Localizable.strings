@@ -20,7 +20,7 @@
 "timer.error.durationTooShort" = "倒计时至少需要 1 分钟。";
 "timer.error.durationTooLong" = "倒计时不能超过 999 小时 59 分钟。";
 "timer.recent.title" = "最近使用";
-"timer.recent.accessibility" = "开始 %@ 倒计时";
+"timer.recent.accessibility" = "填入 %@ 倒计时";
 "timer.list.title" = "倒计时";
 "timer.clearCompleted" = "清除完成";
 "timer.empty.title" = "暂无倒计时";
