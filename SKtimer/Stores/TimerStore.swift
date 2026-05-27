@@ -1,12 +1,25 @@
 import Combine
 import Foundation
 
+struct MeaningfulPromptAnswerEvent: Identifiable, Equatable {
+    var id: UUID { promptID }
+
+    var promptID: UUID
+    var sourceTimerID: UUID
+    var timer: TimerRecord?
+    var sourceVisibleIndex: Int
+    var record: MeaningfulTimeRecord?
+    var wasMeaningful: Bool
+    var answeredAt: Date
+}
+
 @MainActor
 final class TimerStore: ObservableObject {
     @Published private(set) var timers: [TimerRecord]
     @Published private(set) var recentDurations: [Int]
     @Published private(set) var pendingMeaningfulPrompts: [PendingMeaningfulPrompt]
     @Published private(set) var meaningfulTimeRecords: [MeaningfulTimeRecord]
+    @Published private(set) var latestMeaningfulPromptAnswer: MeaningfulPromptAnswerEvent?
     @Published private(set) var now: Date
 
     private static let recentDurationLimit = 6
@@ -45,6 +58,13 @@ final class TimerStore: ObservableObject {
 
     var activeTimers: [TimerRecord] {
         timers.filter { $0.state != .completed }
+    }
+
+    var visibleTimers: [TimerRecord] {
+        let pendingTimerIDs = Set(pendingMeaningfulPrompts.map(\.sourceTimerID))
+        return timers.filter { timer in
+            timer.state != .completed || pendingTimerIDs.contains(timer.id)
+        }
     }
 
     var completedTimers: [TimerRecord] {
@@ -182,17 +202,39 @@ final class TimerStore: ObservableObject {
             return
         }
 
+        let visibleTimersBeforeAnswer = visibleTimers
         let prompt = pendingMeaningfulPrompts.remove(at: index)
-        meaningfulTimeRecords.append(MeaningfulTimeRecord(
+        let sourceTimer = timers.first { $0.id == prompt.sourceTimerID }
+        let sourceVisibleIndex = visibleTimersBeforeAnswer.firstIndex { $0.id == prompt.sourceTimerID } ?? 0
+        var meaningfulRecord: MeaningfulTimeRecord?
+
+        if wasMeaningful {
+            let record = MeaningfulTimeRecord(
+                promptID: prompt.id,
+                sourceTimerID: prompt.sourceTimerID,
+                durationSeconds: prompt.durationSeconds,
+                completedAt: prompt.completedAt,
+                answeredAt: date,
+                wasMeaningful: true,
+                focusSegments: prompt.focusSegments
+            )
+            meaningfulTimeRecords.append(record)
+            meaningfulRecord = record
+        }
+
+        timers.removeAll { $0.id == prompt.sourceTimerID }
+        notificationScheduler.cancelNotification(for: prompt.sourceTimerID)
+        latestMeaningfulPromptAnswer = MeaningfulPromptAnswerEvent(
             promptID: prompt.id,
             sourceTimerID: prompt.sourceTimerID,
-            durationSeconds: prompt.durationSeconds,
-            completedAt: prompt.completedAt,
-            answeredAt: date,
+            timer: sourceTimer,
+            sourceVisibleIndex: sourceVisibleIndex,
+            record: meaningfulRecord,
             wasMeaningful: wasMeaningful,
-            focusSegments: prompt.focusSegments
-        ))
+            answeredAt: date
+        )
         persist()
+        scheduleNextCompletionTimer()
     }
 
     private func scheduleNextCompletionTimer() {

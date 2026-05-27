@@ -48,33 +48,34 @@ struct TimerRowView: View {
                     .accessibilityLabel(Text("timer.progress.accessibility"))
             }
 
-            HStack(spacing: 8) {
-                Button(action: pauseOrResume) {
-                    Label(
-                        timer.state == .paused ? "timer.resume" : "timer.pause",
-                        systemImage: timer.state == .paused ? "play.fill" : "pause.fill"
-                    )
-                }
-                .disabled(timer.state == .completed)
-                .accessibilityIdentifier("pauseResumeButton_\(timer.id.uuidString)")
-
-                if isHovering {
-                    Button(action: restart) {
-                        Label("timer.restart", systemImage: "arrow.clockwise")
+            if timer.state != .completed {
+                HStack(spacing: 8) {
+                    Button(action: pauseOrResume) {
+                        Label(
+                            timer.state == .paused ? "timer.resume" : "timer.pause",
+                            systemImage: timer.state == .paused ? "play.fill" : "pause.fill"
+                        )
                     }
-                    .accessibilityIdentifier("restartButton_\(timer.id.uuidString)")
+                    .accessibilityIdentifier("pauseResumeButton_\(timer.id.uuidString)")
 
-                    Button(role: .destructive, action: delete) {
-                        Label("timer.delete", systemImage: "trash")
+                    if isHovering {
+                        Button(action: restart) {
+                            Label("timer.restart", systemImage: "arrow.clockwise")
+                        }
+                        .accessibilityIdentifier("restartButton_\(timer.id.uuidString)")
+
+                        Button(role: .destructive, action: delete) {
+                            Label("timer.delete", systemImage: "trash")
+                        }
+                        .accessibilityIdentifier("deleteButton_\(timer.id.uuidString)")
                     }
-                    .accessibilityIdentifier("deleteButton_\(timer.id.uuidString)")
-                }
 
-                Spacer(minLength: 0)
+                    Spacer(minLength: 0)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .animation(.easeOut(duration: 0.15), value: isHovering)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .animation(.easeOut(duration: 0.15), value: isHovering)
         }
         .padding(DesignSystem.Spacing.xl)
         .card(border: stateColor.opacity(timer.state == .completed ? 0.28 : 0.18))

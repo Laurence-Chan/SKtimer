@@ -7,7 +7,7 @@ struct ContentView: View {
     @State private var hoursText = ""
     @State private var minutesText = "25"
     @State private var inputError: TimerInputError?
-    @State private var knownMeaningfulRecordIDs = Set<UUID>()
+    @State private var displayedMeaningfulStats = MeaningfulTimeStats.empty
     @State private var intakeAnimation: MeaningfulIntakeAnimation?
     @State private var intakeAnimationSettled = false
     @FocusState private var focusedField: TimerInputField?
@@ -29,14 +29,15 @@ struct ContentView: View {
             )
 
             TimerListPanel(
-                timers: store.activeTimers,
+                timers: visibleTimers,
+                intakeAnimationTimerID: intakeAnimation?.timer.id,
                 pauseOrResume: pauseOrResume,
                 restart: restart,
                 delete: delete
             )
 
             DashboardHeader(
-                stats: store.meaningfulStats,
+                stats: displayedMeaningfulStats,
                 intakeTargetActive: intakeAnimation != nil,
                 chartBars: { period in
                     store.meaningfulChartBars(for: period)
@@ -67,18 +68,35 @@ struct ContentView: View {
             sanitizeMinutes(newValue)
         }
         .onAppear {
-            knownMeaningfulRecordIDs = Set(store.meaningfulTimeRecords.map(\.id))
+            displayedMeaningfulStats = store.meaningfulStats
         }
-        .onChange(of: store.meaningfulTimeRecords) { _, records in
-            handleMeaningfulRecordChange(records)
+        .onChange(of: store.now) { _, _ in
+            refreshDisplayedStatsIfIdle()
+        }
+        .onChange(of: store.latestMeaningfulPromptAnswer) { _, event in
+            handleMeaningfulAnswerEvent(event)
         }
         .onSubmit(startTimer)
+    }
+
+    private var visibleTimers: [TimerRecord] {
+        var timers = store.visibleTimers
+
+        guard let intakeAnimation, !timers.contains(where: { $0.id == intakeAnimation.timer.id }) else {
+            return timers
+        }
+
+        let insertionIndex = min(intakeAnimation.sourceVisibleIndex, timers.count)
+        timers.insert(intakeAnimation.timer, at: insertionIndex)
+        return timers
     }
 
     private func startTimer() {
         switch TimerInputValidator.durationMinutes(hoursText: hoursText, minutesText: minutesText) {
         case .success(let duration):
             store.startTimer(durationMinutes: duration)
+            hoursText = "0"
+            minutesText = "0"
             inputError = nil
             focusedField = .minutes
         case .failure(let error):
@@ -139,7 +157,7 @@ struct ContentView: View {
         proxy: GeometryProxy
     ) -> some View {
         if let intakeAnimation,
-           let sourceAnchor = anchors[.timerList],
+           let sourceAnchor = anchors[.timerRow(intakeAnimation.timer.id)],
            let targetAnchor = anchors[.dailyStat] {
             MeaningfulIntakeOverlay(
                 animation: intakeAnimation,
@@ -151,22 +169,21 @@ struct ContentView: View {
         }
     }
 
-    private func handleMeaningfulRecordChange(_ records: [MeaningfulTimeRecord]) {
-        let newMeaningfulRecords = records
-            .filter { $0.wasMeaningful && !knownMeaningfulRecordIDs.contains($0.id) }
-            .sorted { $0.answeredAt < $1.answeredAt }
-
-        knownMeaningfulRecordIDs = Set(records.map(\.id))
-
-        guard let record = newMeaningfulRecords.last else {
+    private func handleMeaningfulAnswerEvent(_ event: MeaningfulPromptAnswerEvent?) {
+        guard let event else {
             return
         }
 
-        startMeaningfulIntakeAnimation(for: record)
+        guard event.wasMeaningful, let timer = event.timer else {
+            refreshDisplayedStatsIfIdle()
+            return
+        }
+
+        startMeaningfulIntakeAnimation(timer: timer, sourceVisibleIndex: event.sourceVisibleIndex)
     }
 
-    private func startMeaningfulIntakeAnimation(for record: MeaningfulTimeRecord) {
-        let animation = MeaningfulIntakeAnimation(durationSeconds: record.durationSeconds)
+    private func startMeaningfulIntakeAnimation(timer: TimerRecord, sourceVisibleIndex: Int) {
+        let animation = MeaningfulIntakeAnimation(timer: timer, sourceVisibleIndex: sourceVisibleIndex)
         intakeAnimation = animation
         intakeAnimationSettled = false
 
@@ -188,8 +205,17 @@ struct ContentView: View {
             withAnimation(.easeOut(duration: 0.16)) {
                 intakeAnimation = nil
                 intakeAnimationSettled = false
+                displayedMeaningfulStats = store.meaningfulStats
             }
         }
+    }
+
+    private func refreshDisplayedStatsIfIdle() {
+        guard intakeAnimation == nil else {
+            return
+        }
+
+        displayedMeaningfulStats = store.meaningfulStats
     }
 }
 
@@ -199,7 +225,7 @@ private enum TimerInputField {
 }
 
 private enum MeaningfulIntakeAnchorRole: Hashable {
-    case timerList
+    case timerRow(UUID)
     case dailyStat
 }
 
@@ -216,7 +242,8 @@ private struct MeaningfulIntakeAnchorPreferenceKey: PreferenceKey {
 
 private struct MeaningfulIntakeAnimation: Identifiable, Equatable {
     let id = UUID()
-    let durationSeconds: Int
+    let timer: TimerRecord
+    let sourceVisibleIndex: Int
 }
 
 private struct DashboardHeader: View {
@@ -321,21 +348,21 @@ private struct MeaningfulIntakeOverlay: View {
     }
 
     var body: some View {
-        Text(TimerDurationFormatter.compact(seconds: animation.durationSeconds))
-            .font(.system(.headline, design: .rounded, weight: .semibold))
-            .monospacedDigit()
-            .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.accentColor.gradient, in: Capsule(style: .continuous))
-            .shadow(color: Color.accentColor.opacity(isSettled ? 0.15 : 0.38), radius: isSettled ? 2 : 14, y: isSettled ? 1 : 7)
+        TimerRowView(
+            timer: animation.timer,
+            pauseOrResume: {},
+            restart: {},
+            delete: {}
+        )
+            .frame(width: sourceFrame.width)
+            .shadow(color: Color.accentColor.opacity(isSettled ? 0.1 : 0.24), radius: isSettled ? 2 : 16, y: isSettled ? 1 : 8)
             .scaleEffect(
-                x: isSettled ? 0.28 : 1,
-                y: isSettled ? 0.08 : 1,
+                x: isSettled ? 0.18 : 1,
+                y: isSettled ? 0.12 : 1,
                 anchor: .center
             )
-            .opacity(isSettled ? 0.12 : 1)
-            .blur(radius: isSettled ? 0.7 : 0)
+            .opacity(isSettled ? 0.08 : 1)
+            .blur(radius: isSettled ? 0.8 : 0)
             .position(isSettled ? targetPoint : sourcePoint)
             .accessibilityHidden(true)
             .accessibilityIdentifier("meaningfulIntakeAnimation")
@@ -519,6 +546,7 @@ private struct RecentDurationsStrip: View {
 
 private struct TimerListPanel: View {
     let timers: [TimerRecord]
+    let intakeAnimationTimerID: UUID?
     let pauseOrResume: (TimerRecord) -> Void
     let restart: (TimerRecord) -> Void
     let delete: (TimerRecord) -> Void
@@ -550,6 +578,13 @@ private struct TimerListPanel: View {
                                     delete(timer)
                                 }
                             )
+                            .opacity(timer.id == intakeAnimationTimerID ? 0 : 1)
+                            .anchorPreference(
+                                key: MeaningfulIntakeAnchorPreferenceKey.self,
+                                value: .bounds
+                            ) { anchor in
+                                [.timerRow(timer.id): anchor]
+                            }
                             .transition(.scale(0.95).combined(with: .opacity))
                         }
                     }
@@ -560,11 +595,5 @@ private struct TimerListPanel: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .anchorPreference(
-            key: MeaningfulIntakeAnchorPreferenceKey.self,
-            value: .bounds
-        ) { anchor in
-            [.timerList: anchor]
-        }
     }
 }
