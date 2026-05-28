@@ -110,7 +110,7 @@ final class StatusBarController: NSObject, ObservableObject {
             return
         }
 
-        let isRunningTimerVisible = store.nextRunningTimer != nil
+        let isRunningTimerVisible = store.nextRunningTimer != nil && preferences?.showMenuBarCountdown == true
         let title = isRunningTimerVisible ? store.menuBarTitle(at: Date()) : ""
         let showsIcon = !isRunningTimerVisible
 

@@ -71,15 +71,15 @@ final class TimerPreferences: ObservableObject {
     }
 
     func importNotificationSound(from sourceURL: URL) throws {
-        try Self.validateNotificationSound(at: sourceURL)
-        try FileManager.default.createDirectory(at: Self.soundsDirectoryURL, withIntermediateDirectories: true)
-
         let didAccess = sourceURL.startAccessingSecurityScopedResource()
         defer {
             if didAccess {
                 sourceURL.stopAccessingSecurityScopedResource()
             }
         }
+
+        try Self.validateNotificationSound(at: sourceURL)
+        try FileManager.default.createDirectory(at: Self.soundsDirectoryURL, withIntermediateDirectories: true)
 
         let fileName = Self.notificationSoundFileName(for: sourceURL)
         let destinationURL = Self.soundsDirectoryURL.appendingPathComponent(fileName)

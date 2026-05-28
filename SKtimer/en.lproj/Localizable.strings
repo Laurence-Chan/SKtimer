@@ -78,6 +78,7 @@
 "settings.notifications.unknown" = "Unknown";
 "settings.language.title" = "Language";
 "settings.language.description" = "SKtimer follows your macOS language order and falls back to English.";
+"settings.privacyPolicy" = "Privacy Policy";
 
 "notification.timerComplete.title" = "Timer complete";
 "notification.timerComplete.body" = "%@ timer finished.";

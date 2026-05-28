@@ -7,7 +7,7 @@ BUNDLE_ID="com.laurencechan.SKtimer"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT_DIR/SKtimer.xcodeproj"
-DERIVED_DATA="$ROOT_DIR/build/DerivedData"
+DERIVED_DATA="$ROOT_DIR/build/RunDerivedData"
 APP_BUNDLE="$DERIVED_DATA/Build/Products/Debug/$APP_NAME.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 
@@ -17,12 +17,14 @@ usage() {
 
 build_app() {
   pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+  rm -rf "$DERIVED_DATA"
   xcodebuild \
     -project "$PROJECT" \
     -scheme "$APP_NAME" \
     -configuration Debug \
     -destination "platform=macOS" \
     -derivedDataPath "$DERIVED_DATA" \
+    CODE_SIGN_IDENTITY="Apple Development" \
     build
 }
 

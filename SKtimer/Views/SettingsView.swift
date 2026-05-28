@@ -7,6 +7,7 @@ struct SettingsView: View {
     @EnvironmentObject private var notificationScheduler: NotificationScheduler
     @State private var soundImportError: String?
     @State private var previewSound: NSSound?
+    private let privacyPolicyURL = URL(string: "https://github.com/Laurence-Chan/SKtimer/blob/main/PRIVACY.md")
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -134,6 +135,15 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                }
+            }
+
+            if let privacyPolicyURL {
+                SettingsSection {
+                    Link(destination: privacyPolicyURL) {
+                        Label("settings.privacyPolicy", systemImage: "lock.doc")
+                    }
+                    .accessibilityIdentifier("privacyPolicyLink")
                 }
             }
 

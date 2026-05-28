@@ -78,6 +78,7 @@
 "settings.notifications.unknown" = "未知";
 "settings.language.title" = "语言";
 "settings.language.description" = "SKtimer 跟随 macOS 的语言顺序，并在缺省时回退到英文。";
+"settings.privacyPolicy" = "隐私政策";
 
 "notification.timerComplete.title" = "倒计时完成";
 "notification.timerComplete.body" = "%@ 倒计时已结束。";
