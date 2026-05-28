@@ -4,6 +4,8 @@ SKtimer is a small native macOS timer for focused work, breaks, and long-running
 
 SKtimer 是一个轻量的原生 macOS 倒计时工具，适合专注、休息和长时间个人计时。它完全离线运行，数据只保存在本机，并可在菜单栏显示下一个即将结束的倒计时。
 
+![SKtimer screenshot](metadata/app_store/screenshots/final/02-active-timer-1280x800.png)
+
 ## Features
 
 - Fully offline: no account, network calls, analytics, ads, or tracking.
