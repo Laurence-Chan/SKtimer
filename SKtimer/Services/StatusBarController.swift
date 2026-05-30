@@ -234,10 +234,10 @@ final class StatusBarController: NSObject, ObservableObject {
     }
 
     @objc private func openMainWindow() {
-        NSApp.activate(ignoringOtherApps: true)
-
         if let window = NSApp.windows.first(where: { $0.isVisible }) {
-            window.makeKeyAndOrderFront(nil)
+            window.presentOnActiveSpace()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 

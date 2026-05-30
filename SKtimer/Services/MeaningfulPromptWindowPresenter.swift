@@ -7,7 +7,18 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
     private weak var store: TimerStore?
     private var activePromptID: UUID?
     private var window: NSWindow?
+    private var mainWindow: NSWindow?
     private var cancellables = Set<AnyCancellable>()
+    private var openMainWindow: (() -> Void)?
+
+    func setMainWindow(_ mainWindow: NSWindow) {
+        self.mainWindow = mainWindow
+        mainWindow.isReleasedWhenClosed = false
+    }
+
+    func setMainWindowOpener(_ openMainWindow: @escaping () -> Void) {
+        self.openMainWindow = openMainWindow
+    }
 
     func bind(to store: TimerStore) {
         guard self.store !== store else {
@@ -48,11 +59,9 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         }
 
         if activePromptID == prompt.id, let window {
-            if activating && !window.isVisible {
-                NSApp.activate(ignoringOtherApps: true)
+            if activating {
                 showMainTimerWindow()
-                window.makeKeyAndOrderFront(nil)
-                window.orderFrontRegardless()
+                window.presentOnActiveSpace(includeFullScreenAuxiliary: true)
             }
             return
         }
@@ -75,16 +84,14 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
         promptWindow.delegate = self
         promptWindow.isReleasedWhenClosed = false
         promptWindow.level = .floating
-        promptWindow.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        promptWindow.configureForActiveSpacePresentation(includeFullScreenAuxiliary: true)
         promptWindow.center()
 
         window = promptWindow
         if activating {
-            NSApp.activate(ignoringOtherApps: true)
             showMainTimerWindow()
         }
-        promptWindow.makeKeyAndOrderFront(nil)
-        promptWindow.orderFrontRegardless()
+        promptWindow.presentOnActiveSpace(includeFullScreenAuxiliary: true)
     }
 
     func windowWillClose(_ notification: Notification) {
@@ -118,7 +125,20 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
     }
 
     private func showMainTimerWindow() {
-        guard let mainWindow = NSApp.windows.first(where: { candidate in
+        if revealExistingMainTimerWindow() {
+            return
+        }
+
+        openMainWindow?()
+
+        DispatchQueue.main.async { [weak self] in
+            self?.revealExistingMainTimerWindow()
+        }
+    }
+
+    @discardableResult
+    private func revealExistingMainTimerWindow() -> Bool {
+        guard let mainWindow = mainWindow ?? NSApp.windows.first(where: { candidate in
             candidate !== window &&
                 candidate.title == String(localized: "app.name") &&
                 !candidate.isMiniaturized
@@ -126,14 +146,10 @@ final class MeaningfulPromptWindowPresenter: NSObject, ObservableObject, NSWindo
             candidate !== window &&
                 candidate.title == String(localized: "app.name")
         }) else {
-            return
+            return false
         }
 
-        if mainWindow.isMiniaturized {
-            mainWindow.deminiaturize(nil)
-        }
-
-        mainWindow.makeKeyAndOrderFront(nil)
-        mainWindow.orderFrontRegardless()
+        mainWindow.presentOnActiveSpace()
+        return true
     }
 }
